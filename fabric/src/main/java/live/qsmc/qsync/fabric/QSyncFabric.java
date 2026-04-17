@@ -1,6 +1,6 @@
 package live.qsmc.qsync.fabric;
 
-import live.qsmc.fabric2.api.QuiptMod;
+import live.qsmc.fabric2.QuiptMod;
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 
