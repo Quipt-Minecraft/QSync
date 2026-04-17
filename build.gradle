@@ -22,3 +22,14 @@ subprojects {
         }
     }
 }
+
+tasks.register("generateMetadata") {
+    group = "publishing"
+    description = "Generates Maven metadata for all submodule publications."
+    subprojects.each { sub ->
+        dependsOn sub.tasks.matching { t ->
+            t.name == "generateMetadataFileForShadowPublication" ||
+            t.name == "generateMetadataFileForRemappedPublication"
+        }
+    }
+}
