@@ -38,32 +38,47 @@ final class PaperPlayerDataStore {
         Object nmsPlayer = player.getClass().getMethod("getHandle").invoke(player);
 
         Class<?> compoundTagClass = Class.forName("net.minecraft.nbt.CompoundTag");
-        Object nbt = compoundTagClass.getConstructor().newInstance();
 
-        // Try to find the save method - name varies by MC version
+        // Try to find the save method - signature varies by MC version
+        // 1. Try saveWithoutId(CompoundTag) → CompoundTag (older versions)
+        // 2. Try no-arg methods that return CompoundTag (newer versions)
         java.lang.reflect.Method saveMethod = null;
-        String[] candidates = {"saveWithoutId", "saveCompound", "serializeEntity", "save"};
-        for (String name : candidates) {
+        boolean noArg = false;
+        String[] oneArgCandidates = {"saveWithoutId", "saveCompound", "serializeEntity", "save"};
+        for (String name : oneArgCandidates) {
             saveMethod = findMethodInHierarchy(nmsPlayer.getClass(), name, compoundTagClass);
             if (saveMethod != null) break;
         }
 
-        if (saveMethod == null) {
-            // Dump all single-arg methods accepting CompoundTag for diagnostics
-            StringBuilder sb = new StringBuilder("Could not find save method. Candidates on entity hierarchy: ");
-            for (Class<?> c = nmsPlayer.getClass(); c != null; c = c.getSuperclass()) {
-                for (java.lang.reflect.Method m : c.getDeclaredMethods()) {
-                    Class<?>[] params = m.getParameterTypes();
-                    if (params.length == 1 && params[0].getName().contains("CompoundTag")) {
-                        sb.append(c.getSimpleName()).append(".").append(m.getName()).append("(").append(params[0].getSimpleName()).append("), ");
+        Object nbt;
+        if (saveMethod != null) {
+            saveMethod.setAccessible(true);
+            nbt = saveMethod.invoke(nmsPlayer, compoundTagClass.getConstructor().newInstance());
+        } else {
+            // Try no-arg methods returning CompoundTag
+            String[] noArgCandidates = {"saveWithoutId", "saveCompound", "serializeEntity", "save", "saveData", "serialize"};
+            for (String name : noArgCandidates) {
+                saveMethod = findNoArgMethodReturning(nmsPlayer.getClass(), name, compoundTagClass);
+                if (saveMethod != null) break;
+            }
+
+            if (saveMethod == null) {
+                // Last resort: find ANY method in hierarchy returning CompoundTag with 0 or 1 args
+                StringBuilder sb = new StringBuilder("Could not find save method. Methods returning CompoundTag: ");
+                for (Class<?> c = nmsPlayer.getClass(); c != null; c = c.getSuperclass()) {
+                    for (java.lang.reflect.Method m : c.getDeclaredMethods()) {
+                        if (m.getReturnType() == compoundTagClass && m.getParameterCount() <= 1) {
+                            sb.append(c.getSimpleName()).append(".").append(m.getName()).append("(");
+                            for (Class<?> p : m.getParameterTypes()) sb.append(p.getSimpleName());
+                            sb.append("), ");
+                        }
                     }
                 }
+                throw new NoSuchMethodException(sb.toString());
             }
-            throw new NoSuchMethodException(sb.toString());
+            saveMethod.setAccessible(true);
+            nbt = saveMethod.invoke(nmsPlayer);
         }
-
-        saveMethod.setAccessible(true);
-        nbt = saveMethod.invoke(nmsPlayer, nbt);
 
         // NbtIo.writeCompressed(CompoundTag, OutputStream)
         Class<?> nbtIoClass = Class.forName("net.minecraft.nbt.NbtIo");
@@ -156,6 +171,17 @@ final class PaperPlayerDataStore {
         for (Class<?> c = clazz; c != null; c = c.getSuperclass()) {
             try {
                 return c.getDeclaredMethod(name, paramTypes);
+            } catch (NoSuchMethodException ignored) {}
+        }
+        return null;
+    }
+
+    /** Find a no-arg method with the given name that returns the given type. */
+    private static java.lang.reflect.Method findNoArgMethodReturning(Class<?> clazz, String name, Class<?> returnType) {
+        for (Class<?> c = clazz; c != null; c = c.getSuperclass()) {
+            try {
+                java.lang.reflect.Method m = c.getDeclaredMethod(name);
+                if (returnType.isAssignableFrom(m.getReturnType())) return m;
             } catch (NoSuchMethodException ignored) {}
         }
         return null;
