@@ -1,0 +1,45 @@
+plugins {
+    id("java-library")
+    id("xyz.jpenilla.run-velocity") version "3.0.2"
+    id("com.gradleup.shadow") version "8.3.6"
+}
+
+dependencies {
+    compileOnly("com.velocitypowered:velocity-api:3.5.0-SNAPSHOT")
+    compileOnly("com.google.code.gson:gson:2.11.0")
+
+    implementation("live.qsmc:core:${quipt_version}")
+    implementation("live.qsmc:velocity:${quipt_version}")
+}
+
+java {
+    toolchain.languageVersion = JavaLanguageVersion.of(21)
+}
+
+tasks {
+    runVelocity {
+        velocityVersion("3.5.0-SNAPSHOT")
+    }
+    jar {
+        enabled = false
+    }
+    shadowJar {
+        archiveBaseName.set("qsync-velocity")
+        archiveClassifier.set("")
+    }
+    build {
+        dependsOn(shadowJar)
+    }
+    processResources {
+        def pluginProperties = [version: version]
+        inputs.properties pluginProperties
+        filteringCharset = 'UTF-8'
+        duplicatesStrategy = DuplicatesStrategy.INCLUDE
+
+        from(rootProject.file('gradle.properties'))
+
+        filesMatching('velocity-plugin.json') {
+            expand pluginProperties
+        }
+    }
+}

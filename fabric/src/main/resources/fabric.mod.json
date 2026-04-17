@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "id": "qsync",
+  "version": "${version}",
+  "name": "QSync",
+  "description": "QSync backend for Fabric servers",
+  "entrypoints": {
+    "main": [
+      "com.dragon.qsync.fabric.QSyncFabric"
+    ]
+  },
+  "depends": {
+    "fabricloader": ">=0.15.0",
+    "minecraft": ">=1.21",
+    "java": ">=21"
+  }
+}
