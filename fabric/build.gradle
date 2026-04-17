@@ -2,6 +2,10 @@ plugins {
     id("fabric-loom") version "1.16-SNAPSHOT"
 }
 
+loom {
+    accessWidenerPath = file("src/main/resources/qsync.accesswidener")
+}
+
 repositories {
     maven { url "https://maven.fabricmc.net/" }
 }
@@ -11,6 +15,7 @@ dependencies {
     mappings("net.fabricmc:yarn:${yarn_mappings}:v2")
     modImplementation("net.fabricmc:fabric-loader:${loader_version}")
     modImplementation("net.fabricmc.fabric-api:fabric-api:${fabric_version}")
+    compileOnly("com.google.code.gson:gson:2.11.0")
 }
 
 tasks {

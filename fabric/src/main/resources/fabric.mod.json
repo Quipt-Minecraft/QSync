@@ -4,6 +4,8 @@
   "version": "${version}",
   "name": "QSync",
   "description": "QSync backend for Fabric servers",
+  "environment": "server",
+  "accessWidener": "qsync.accesswidener",
   "entrypoints": {
     "main": [
       "live.qsmc.qsync.fabric.QSyncFabric"

@@ -5,6 +5,7 @@ plugins {
 
 dependencies {
     compileOnly("io.papermc.paper:paper-api:${minecraft_version}-${paper_build}")
+    compileOnly("com.google.code.gson:gson:2.11.0")
 
     implementation("live.qsmc:core:${quipt_version}")
     implementation("live.qsmc:paper:${quipt_version}-MC${minecraft_version}")
