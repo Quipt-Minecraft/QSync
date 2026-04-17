@@ -4,12 +4,11 @@ import org.bukkit.entity.Player;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
 
 /**
- * Captures / applies player data via NMS reflection using the MC 1.21.11 ValueOutput/ValueInput API.
+ * Captures / applies player data via NMS reflection using MC 1.21.11's
+ * TagValueOutput / TagValueInput API (Mojang-mapped).
  */
 final class PaperPlayerDataStore {
 
@@ -18,71 +17,28 @@ final class PaperPlayerDataStore {
     static byte[] capture(Player player) throws Exception {
         Object nmsPlayer = player.getClass().getMethod("getHandle").invoke(player);
 
-        // Find Entity.saveWithoutId with 1 parameter (the ValueOutput)
-        Method saveWithoutId = findMethodByName(nmsPlayer.getClass(), "saveWithoutId", 1);
+        // ProblemReporter.DISCARDING
+        Class<?> problemReporterClass = Class.forName("net.minecraft.util.ProblemReporter");
+        Object discarding = problemReporterClass.getField("DISCARDING").get(null);
+
+        // TagValueOutput.createWithoutContext(ProblemReporter) -> TagValueOutput
+        Class<?> tagValueOutputClass = Class.forName("net.minecraft.world.level.storage.TagValueOutput");
+        Method createWithoutContext = tagValueOutputClass.getMethod("createWithoutContext", problemReporterClass);
+        Object valueOutput = createWithoutContext.invoke(null, discarding);
+
+        // Entity.saveWithoutId(ValueOutput) -> void
+        Method saveWithoutId = findSingleParamMethod(nmsPlayer.getClass(), "saveWithoutId", valueOutput);
         if (saveWithoutId == null) {
-            throw new NoSuchMethodException("Cannot find saveWithoutId(1 param) on entity hierarchy");
+            throw new NoSuchMethodException("Cannot find saveWithoutId that accepts " + valueOutput.getClass().getName());
         }
         saveWithoutId.setAccessible(true);
-
-        // The parameter type is ValueOutput — we need to create an instance
-        Class<?> valueOutputClass = saveWithoutId.getParameterTypes()[0];
-
-        // Create a ValueOutput. Try multiple strategies:
-        // 1. CompoundTag might implement it directly
-        Class<?> compoundTagClass = Class.forName("net.minecraft.nbt.CompoundTag");
-        Object nbt = compoundTagClass.getConstructor().newInstance();
-
-        Object valueOutput;
-        if (valueOutputClass.isInstance(nbt)) {
-            // CompoundTag implements ValueOutput directly
-            valueOutput = nbt;
-        } else {
-            // Need to create a ValueOutput wrapping a CompoundTag
-            // Try static factory methods on the ValueOutput type
-            valueOutput = createValueOutput(valueOutputClass, compoundTagClass);
-            if (valueOutput == null) {
-                // Dump available info for diagnostics
-                StringBuilder sb = new StringBuilder("Cannot create ValueOutput. Class: " + valueOutputClass.getName());
-                sb.append("\nCompoundTag interfaces: ");
-                for (Class<?> iface : compoundTagClass.getInterfaces()) {
-                    sb.append(iface.getName()).append(", ");
-                }
-                sb.append("\nValueOutput is interface: ").append(valueOutputClass.isInterface());
-                sb.append("\nValueOutput methods: ");
-                for (Method m : valueOutputClass.getDeclaredMethods()) {
-                    if (Modifier.isStatic(m.getModifiers())) {
-                        sb.append("static ").append(m.getName()).append("(");
-                        for (Class<?> p : m.getParameterTypes()) sb.append(p.getSimpleName()).append(",");
-                        sb.append(")->").append(m.getReturnType().getSimpleName()).append("; ");
-                    }
-                }
-                sb.append("\nValueOutput constructors: ");
-                for (Constructor<?> c : valueOutputClass.getDeclaredConstructors()) {
-                    sb.append("(");
-                    for (Class<?> p : c.getParameterTypes()) sb.append(p.getSimpleName()).append(",");
-                    sb.append("); ");
-                }
-                // Also check implementations/subclasses that wrap CompoundTag
-                sb.append("\nCompoundTag superclass: ").append(compoundTagClass.getSuperclass().getName());
-                throw new RuntimeException(sb.toString());
-            }
-        }
-
         saveWithoutId.invoke(nmsPlayer, valueOutput);
 
-        // Extract CompoundTag from the valueOutput if it's a wrapper
-        if (valueOutputClass.isInstance(nbt)) {
-            // nbt was used directly as valueOutput, already mutated
-        } else {
-            // Try to get the CompoundTag out of the wrapper via getNbt(), getTag(), toCompound(), etc.
-            nbt = extractCompoundTag(valueOutput, compoundTagClass);
-            if (nbt == null) {
-                throw new RuntimeException("Cannot extract CompoundTag from ValueOutput wrapper: " + valueOutput.getClass().getName());
-            }
-        }
+        // TagValueOutput.buildResult() -> CompoundTag
+        Method buildResult = tagValueOutputClass.getMethod("buildResult");
+        Object nbt = buildResult.invoke(valueOutput);
 
-        // NbtIo.writeCompressed
+        // NbtIo.writeCompressed(CompoundTag, OutputStream)
         Class<?> nbtIoClass = Class.forName("net.minecraft.nbt.NbtIo");
         Method writeCompressed = findWriteCompressed(nbtIoClass, nbt);
         if (writeCompressed == null) {
@@ -106,22 +62,24 @@ final class PaperPlayerDataStore {
                 java.io.InputStream.class, nbtAccounterClass);
         Object nbt = readCompressed.invoke(null, new ByteArrayInputStream(rawPlayerDat), accounter);
 
-        // Find readAdditionalSaveData with 1 param
-        Method readData = findMethodByName(nmsPlayer.getClass(), "readAdditionalSaveData", 1);
+        // ProblemReporter.DISCARDING
+        Class<?> problemReporterClass = Class.forName("net.minecraft.util.ProblemReporter");
+        Object discarding = problemReporterClass.getField("DISCARDING").get(null);
+
+        // registryAccess from the player
+        Object registryAccess = nmsPlayer.getClass().getMethod("registryAccess").invoke(nmsPlayer);
+
+        // TagValueInput.create(ProblemReporter, HolderLookup.Provider, CompoundTag) -> ValueInput
+        Class<?> tagValueInputClass = Class.forName("net.minecraft.world.level.storage.TagValueInput");
+        Class<?> holderLookupProviderClass = Class.forName("net.minecraft.core.HolderLookup$Provider");
+        Class<?> compoundTagClass = Class.forName("net.minecraft.nbt.CompoundTag");
+        Method createInput = tagValueInputClass.getMethod("create", problemReporterClass, holderLookupProviderClass, compoundTagClass);
+        Object valueInput = createInput.invoke(null, discarding, registryAccess, nbt);
+
+        // Entity.readAdditionalSaveData(ValueInput) -> void
+        Method readData = findSingleParamMethod(nmsPlayer.getClass(), "readAdditionalSaveData", valueInput);
         if (readData != null) {
             readData.setAccessible(true);
-            Class<?> paramType = readData.getParameterTypes()[0];
-
-            Object valueInput;
-            if (paramType.isInstance(nbt)) {
-                valueInput = nbt;
-            } else {
-                // Create a ValueInput wrapper around the CompoundTag
-                valueInput = createValueInput(paramType, nbt);
-                if (valueInput == null) {
-                    throw new RuntimeException("Cannot create ValueInput from CompoundTag for readAdditionalSaveData");
-                }
-            }
             readData.invoke(nmsPlayer, valueInput);
         }
 
@@ -136,104 +94,16 @@ final class PaperPlayerDataStore {
         } catch (NoSuchMethodException | NoSuchFieldException ignored) {}
     }
 
-    /** Find a method by name with exactly N parameters, walking hierarchy. */
-    private static Method findMethodByName(Class<?> clazz, String name, int paramCount) {
+    /**
+     * Find a method by name with exactly one parameter, where the given argument is assignable to that parameter type.
+     */
+    private static Method findSingleParamMethod(Class<?> clazz, String name, Object arg) {
         for (Class<?> c = clazz; c != null; c = c.getSuperclass()) {
             for (Method m : c.getDeclaredMethods()) {
-                if (m.getName().equals(name) && m.getParameterCount() == paramCount) {
+                if (m.getName().equals(name) && m.getParameterCount() == 1
+                        && m.getParameterTypes()[0].isInstance(arg)) {
                     return m;
                 }
-            }
-        }
-        return null;
-    }
-
-    /** Try to create a ValueOutput instance via static factories or constructors. */
-    private static Object createValueOutput(Class<?> voClass, Class<?> compoundTagClass) {
-        // Try static factory methods that return ValueOutput
-        for (Method m : voClass.getDeclaredMethods()) {
-            if (Modifier.isStatic(m.getModifiers()) && voClass.isAssignableFrom(m.getReturnType())) {
-                try {
-                    m.setAccessible(true);
-                    if (m.getParameterCount() == 0) {
-                        return m.invoke(null);
-                    }
-                } catch (Exception ignored) {}
-            }
-        }
-        // Try constructors
-        for (Constructor<?> c : voClass.getDeclaredConstructors()) {
-            try {
-                c.setAccessible(true);
-                if (c.getParameterCount() == 0) {
-                    return c.newInstance();
-                }
-            } catch (Exception ignored) {}
-        }
-        // Try subclasses / known wrappers — check if there's an NbtValueOutput or similar
-        // that takes a CompoundTag
-        String[] wrapperNames = {
-            "net.minecraft.nbt.NbtValueOutput",
-            "net.minecraft.nbt.CompoundTagValueOutput",
-            "net.minecraft.nbt.CompoundTag$ValueOutputImpl"
-        };
-        for (String name : wrapperNames) {
-            try {
-                Class<?> wrapperClass = Class.forName(name, true, voClass.getClassLoader());
-                for (Constructor<?> c : wrapperClass.getDeclaredConstructors()) {
-                    if (c.getParameterCount() == 1 && c.getParameterTypes()[0].isAssignableFrom(compoundTagClass)) {
-                        c.setAccessible(true);
-                        return c.newInstance(compoundTagClass.getConstructor().newInstance());
-                    }
-                }
-            } catch (Exception ignored) {}
-        }
-        return null;
-    }
-
-    /** Try to create a ValueInput wrapper around a CompoundTag. */
-    private static Object createValueInput(Class<?> viClass, Object nbt) {
-        // Try static factory methods
-        for (Method m : viClass.getDeclaredMethods()) {
-            if (Modifier.isStatic(m.getModifiers()) && viClass.isAssignableFrom(m.getReturnType())
-                    && m.getParameterCount() == 1 && m.getParameterTypes()[0].isInstance(nbt)) {
-                try {
-                    m.setAccessible(true);
-                    return m.invoke(null, nbt);
-                } catch (Exception ignored) {}
-            }
-        }
-        // Try constructors
-        for (Constructor<?> c : viClass.getDeclaredConstructors()) {
-            if (c.getParameterCount() == 1 && c.getParameterTypes()[0].isInstance(nbt)) {
-                try {
-                    c.setAccessible(true);
-                    return c.newInstance(nbt);
-                } catch (Exception ignored) {}
-            }
-        }
-        return null;
-    }
-
-    /** Extract CompoundTag from a ValueOutput wrapper. */
-    private static Object extractCompoundTag(Object wrapper, Class<?> compoundTagClass) {
-        String[] getterNames = {"getNbt", "getTag", "toCompound", "toNbt", "getCompound", "build"};
-        for (String name : getterNames) {
-            try {
-                Method m = wrapper.getClass().getMethod(name);
-                if (compoundTagClass.isAssignableFrom(m.getReturnType())) {
-                    m.setAccessible(true);
-                    return m.invoke(wrapper);
-                }
-            } catch (Exception ignored) {}
-        }
-        // Try any no-arg method returning CompoundTag
-        for (Method m : wrapper.getClass().getMethods()) {
-            if (m.getParameterCount() == 0 && compoundTagClass.isAssignableFrom(m.getReturnType())) {
-                try {
-                    m.setAccessible(true);
-                    return m.invoke(wrapper);
-                } catch (Exception ignored) {}
             }
         }
         return null;
