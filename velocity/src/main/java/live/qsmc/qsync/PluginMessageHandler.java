@@ -23,6 +23,10 @@ public class PluginMessageHandler {
 
     @Subscribe
     public void onPluginMessage(PluginMessageEvent event) {
+        // Log ALL plugin messages for debugging
+        QSync.instance().logger().log("Handler", "PluginMessage received: identifier={}, source={}",
+                event.getIdentifier().getId(), event.getSource().getClass().getSimpleName());
+
         if (!event.getIdentifier().equals(QSync.CHANNEL)) return;
         // Only accept messages sent from a backend server, not from a player client
         if (!(event.getSource() instanceof ServerConnection)) return;
