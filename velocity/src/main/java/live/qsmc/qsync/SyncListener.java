@@ -1,4 +1,4 @@
-package com.dragon.qsync;
+package live.qsmc.qsync;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;

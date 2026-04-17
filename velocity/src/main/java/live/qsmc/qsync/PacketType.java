@@ -1,4 +1,4 @@
-package com.dragon.qsync;
+package live.qsmc.qsync;
 
 public final class PacketType {
 

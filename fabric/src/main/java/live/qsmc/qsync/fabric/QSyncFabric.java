@@ -1,4 +1,4 @@
-package com.dragon.qsync.fabric;
+package live.qsmc.qsync.fabric;
 
 import net.fabricmc.api.ModInitializer;
 

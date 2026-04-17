@@ -1,4 +1,4 @@
-package com.dragon.qsync.paper;
+package live.qsmc.qsync.paper;
 
 import live.qsmc.paper2.QuiptPlugin;
 import org.bukkit.plugin.java.JavaPlugin;

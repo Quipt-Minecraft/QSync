@@ -1,4 +1,4 @@
-package com.dragon.qsync;
+package live.qsmc.qsync;
 
 import com.google.inject.Inject;
 import com.velocitypowered.api.plugin.annotation.DataDirectory;

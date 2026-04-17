@@ -6,7 +6,7 @@
   "description": "QSync backend for Fabric servers",
   "entrypoints": {
     "main": [
-      "com.dragon.qsync.fabric.QSyncFabric"
+      "live.qsmc.qsync.fabric.QSyncFabric"
     ]
   },
   "depends": {

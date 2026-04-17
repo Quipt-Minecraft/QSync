@@ -1,5 +1,5 @@
 name: QSync
 version: ${version}
-main: com.dragon.qsync.paper.QSyncPaper
+main: live.qsmc.qsync.paper.QSyncPaper
 api-version: '1.21'
 description: QSync backend for Paper servers

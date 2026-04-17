@@ -1,4 +1,4 @@
-package com.dragon.qsync;
+package live.qsmc.qsync;
 
 import java.util.Map;
 import java.util.UUID;
