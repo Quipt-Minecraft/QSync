@@ -30,3 +30,12 @@ tasks {
         }
     }
 }
+
+publishing {
+    publications {
+        remapped(MavenPublication) {
+            artifactId = "qsync-fabric"
+            artifact remapJar
+        }
+    }
+}

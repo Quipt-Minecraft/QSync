@@ -30,6 +30,9 @@ tasks {
     build {
         dependsOn(shadowJar)
     }
+    publish {
+        dependsOn(shadowJar)
+    }
     processResources {
         def pluginProperties = [version: version]
         inputs.properties pluginProperties
@@ -40,6 +43,15 @@ tasks {
 
         filesMatching('velocity-plugin.json') {
             expand pluginProperties
+        }
+    }
+}
+
+publishing {
+    publications {
+        shadow(MavenPublication) {
+            artifactId = "qsync-velocity"
+            artifact shadowJar
         }
     }
 }
