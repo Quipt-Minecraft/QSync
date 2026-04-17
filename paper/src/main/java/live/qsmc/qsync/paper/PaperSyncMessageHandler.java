@@ -69,6 +69,7 @@ final class PaperSyncMessageHandler implements PluginMessageListener {
             sendSyncData(transportPlayer, targetUuid.toString(), FORMAT_PLAYER_DAT_GZIP_BASE64, encoded);
         } catch (Exception ex) {
             plugin.getLogger().warning("Failed to capture data for " + targetUuid + ": " + ex.getMessage());
+            ex.printStackTrace();
         }
     }
 
