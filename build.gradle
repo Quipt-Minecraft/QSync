@@ -1,0 +1,9 @@
+subprojects {
+    group = "${group}"
+    version = "${project_version}-${build_status}.${build_number}-MC${minecraft_version}"
+    repositories {
+        mavenCentral()
+        maven { url "https://repo.papermc.io/repository/maven-public/" }
+        maven { url "https://repo.qsmc.live/repository/quipt" }
+    }
+}

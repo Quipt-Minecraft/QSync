@@ -1,0 +1,12 @@
+pluginManagement {
+    repositories {
+        maven { url "https://maven.fabricmc.net/" }
+        gradlePluginPortal()
+    }
+}
+
+rootProject.name = "qsync"
+
+include("velocity")
+include("paper")
+include("fabric")

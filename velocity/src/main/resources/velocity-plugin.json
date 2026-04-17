@@ -1,0 +1,6 @@
+{
+  "id": "qsync",
+  "name": "QSync",
+  "version": "${version}",
+  "main": "com.dragon.qsync.QSync"
+}
