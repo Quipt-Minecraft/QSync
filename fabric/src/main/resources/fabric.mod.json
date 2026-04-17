@@ -7,7 +7,7 @@
   "environment": "server",
   "accessWidener": "qsync.accesswidener",
   "entrypoints": {
-    "main": [
+    "quipt": [
       "live.qsmc.qsync.fabric.QSyncFabric"
     ]
   },

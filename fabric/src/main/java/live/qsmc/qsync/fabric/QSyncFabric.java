@@ -1,10 +1,10 @@
 package live.qsmc.qsync.fabric;
 
-import net.fabricmc.api.ModInitializer;
+import live.qsmc.fabric2.api.QuiptMod;
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 
-public class QSyncFabric implements ModInitializer {
+public class QSyncFabric extends QuiptMod {
 
     static final String TYPE_SYNC_REQUEST = "SYNC_REQUEST";
     static final String TYPE_SYNC_DATA = "SYNC_DATA";
