@@ -63,14 +63,23 @@ final class PaperPlayerDataStore {
             }
 
             if (saveMethod == null) {
-                // Last resort: find ANY method in hierarchy returning CompoundTag with 0 or 1 args
-                StringBuilder sb = new StringBuilder("Could not find save method. Methods returning CompoundTag: ");
-                for (Class<?> c = nmsPlayer.getClass(); c != null; c = c.getSuperclass()) {
+                // Dump ALL methods containing save/serial/write/nbt/data/store in name
+                StringBuilder sb = new StringBuilder("Could not find save method.\n");
+                String[] keywords = {"save", "serial", "write", "nbt", "store", "data", "tag", "compound", "encode"};
+                for (Class<?> c = nmsPlayer.getClass(); c != null && c != Object.class; c = c.getSuperclass()) {
                     for (java.lang.reflect.Method m : c.getDeclaredMethods()) {
-                        if (m.getReturnType() == compoundTagClass && m.getParameterCount() <= 1) {
-                            sb.append(c.getSimpleName()).append(".").append(m.getName()).append("(");
-                            for (Class<?> p : m.getParameterTypes()) sb.append(p.getSimpleName());
-                            sb.append("), ");
+                        String lower = m.getName().toLowerCase();
+                        for (String kw : keywords) {
+                            if (lower.contains(kw)) {
+                                sb.append(c.getSimpleName()).append(".").append(m.getName()).append("(");
+                                Class<?>[] params = m.getParameterTypes();
+                                for (int i = 0; i < params.length; i++) {
+                                    if (i > 0) sb.append(", ");
+                                    sb.append(params[i].getSimpleName());
+                                }
+                                sb.append(") -> ").append(m.getReturnType().getSimpleName()).append("\n");
+                                break;
+                            }
                         }
                     }
                 }
