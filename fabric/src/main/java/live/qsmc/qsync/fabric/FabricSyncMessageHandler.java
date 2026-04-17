@@ -3,6 +3,7 @@ package live.qsmc.qsync.fabric;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
+import net.minecraft.network.packet.s2c.common.CustomPayloadS2CPacket;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.network.ServerPlayerEntity;
 
@@ -16,15 +17,20 @@ final class FabricSyncMessageHandler {
     void onPayload(QSyncPayload payload, ServerPlayNetworking.Context context) {
         MinecraftServer server = context.server();
         ServerPlayerEntity transportPlayer = context.player();
-        server.execute(() -> handlePacket(payload, transportPlayer, server));
+        server.execute(() -> handlePacket(payload.json(), transportPlayer, server));
     }
 
-    private void handlePacket(QSyncPayload payload, ServerPlayerEntity transportPlayer, MinecraftServer server) {
+    /** Called from the Mixin-based handler for raw packets from Velocity. */
+    void onRawPayload(String json, ServerPlayerEntity transportPlayer, MinecraftServer server) {
+        handlePacket(json, transportPlayer, server);
+    }
+
+    private void handlePacket(String jsonStr, ServerPlayerEntity transportPlayer, MinecraftServer server) {
         JsonObject packet;
         try {
-            packet = JsonParser.parseString(payload.json()).getAsJsonObject();
+            packet = JsonParser.parseString(jsonStr).getAsJsonObject();
         } catch (Exception ignored) {
-            System.out.println("[QSync] Failed to parse payload JSON: " + payload.json().substring(0, Math.min(100, payload.json().length())));
+            System.out.println("[QSync] Failed to parse payload JSON: " + jsonStr.substring(0, Math.min(100, jsonStr.length())));
             return;
         }
 
@@ -73,7 +79,8 @@ final class FabricSyncMessageHandler {
             data.addProperty("blob", encoded);
             response.add("data", data);
 
-            ServerPlayNetworking.send(transportPlayer, new QSyncPayload(response.toString()));
+            // Send via vanilla packet, NOT Fabric API, so Velocity (vanilla proxy) receives it
+            transportPlayer.networkHandler.sendPacket(new CustomPayloadS2CPacket(new QSyncPayload(response.toString())));
             System.out.println("[QSync] Sent SYNC_DATA for " + targetUuid + " (" + response.toString().length() + " chars)");
         } catch (Exception e) {
             System.out.println("[QSync] Failed to capture data for " + targetUuid + ": " + e.getMessage());

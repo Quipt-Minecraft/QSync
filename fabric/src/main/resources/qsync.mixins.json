@@ -1,0 +1,12 @@
+{
+  "required": true,
+  "package": "live.qsmc.qsync.fabric.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "server": [
+    "ServerCommonNetworkHandlerMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}
+
