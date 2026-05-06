@@ -3,8 +3,7 @@
   "package": "live.qsmc.qsync.fabric.mixin",
   "compatibilityLevel": "JAVA_21",
   "server": [
-    "ServerCommonNetworkHandlerMixin",
-    "PlayerEntityAccessor"
+    "ServerCommonNetworkHandlerMixin"
   ],
   "injectors": {
     "defaultRequire": 1

@@ -6,6 +6,7 @@ import com.velocitypowered.api.event.player.ServerConnectedEvent;
 import com.velocitypowered.api.proxy.Player;
 import com.velocitypowered.api.proxy.ProxyServer;
 import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
 
 /**
  * Listens for player join/leave events on the proxy and announces them.
@@ -28,7 +29,7 @@ public class JoinLeaveListener {
             Player player = event.getPlayer();
             String serverName = event.getServer().getServerInfo().getName();
 
-            Component message = Component.text("[" + serverName + "] " + player.getUsername() + " joined the network");
+            Component message = Component.text(player.getUsername() + " joined the game.", NamedTextColor.YELLOW);
 
             for (Player onlinePlayer : server.getAllPlayers()) {
                 onlinePlayer.sendMessage(message);
@@ -45,7 +46,7 @@ public class JoinLeaveListener {
     public void onPlayerDisconnect(DisconnectEvent event) {
         Player player = event.getPlayer();
 
-        Component message = Component.text(player.getUsername() + " left the network");
+        Component message = Component.text(player.getUsername() + " left the game.", NamedTextColor.YELLOW);
 
         for (Player onlinePlayer : server.getAllPlayers()) {
             onlinePlayer.sendMessage(message);
