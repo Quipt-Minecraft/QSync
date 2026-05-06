@@ -31,8 +31,8 @@ public class QSync extends QuiptProxy {
 
     @Override
     public void enable() {
+        System.out.println("[QSync] Initializing...");
         proxy().getChannelRegistrar().register(CHANNEL);
-        proxy().getEventManager().register(this, this);
         proxy().getEventManager().register(this, new SyncListener(this, proxy(), cache));
         proxy().getEventManager().register(this, new PluginMessageHandler(cache));
         proxy().getEventManager().register(this, new ChatListener(proxy()));
