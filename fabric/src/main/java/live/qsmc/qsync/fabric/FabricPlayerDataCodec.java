@@ -1,5 +1,6 @@
 package live.qsmc.qsync.fabric;
 
+import live.qsmc.qsync.fabric.mixin.PlayerEntityAccessor;
 import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtCompound;
@@ -21,7 +22,6 @@ import net.minecraft.registry.RegistryOps;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.lang.reflect.Method;
 
 final class FabricPlayerDataCodec {
 
@@ -50,11 +50,9 @@ final class FabricPlayerDataCodec {
      * <ol>
      *   <li>Build an {@code NbtReadView} (the proper read-side counterpart to the
      *       {@code NbtWriteView} used during capture) and call the protected
-     *       {@code readCustomData(ReadView)} on the player via reflection — this
-     *       mirrors exactly what the vanilla server does when loading a player from
-     *       disk and restores <em>everything</em> in one shot.</li>
-     *   <li>If that fails (e.g. future mapping changes), fall back to explicit NBT
-     *       key reads for the most important gameplay state.</li>
+     *       {@code readCustomData(ReadView)} through a mixin invoker. This is remap-safe
+     *       in production jars and mirrors vanilla player-data loading.</li>
+     *   <li>If that fails, fall back to explicit NBT key reads for core gameplay state.</li>
      * </ol>
      * Position and rotation of the <em>destination</em> server are preserved so the
      * player does not get teleported to the origin server's coordinates.
@@ -93,19 +91,9 @@ final class FabricPlayerDataCodec {
     private static boolean tryReadCustomData(ServerPlayerEntity player, NbtCompound nbt) {
         try {
             RegistryWrapper.WrapperLookup registries = player.getRegistryManager();
-
-            // Build the read-side view with the same registry context used during capture.
             ReadView readView = NbtReadView.create(ErrorReporter.EMPTY, registries, nbt);
 
-            // readCustomData(ReadView) is protected — find it walking up the hierarchy.
-            Method readCustomData = findMethod(player.getClass(), "readCustomData", ReadView.class);
-            if (readCustomData == null) {
-                System.out.println("[QSync] readCustomData(ReadView) not found — will use fallback");
-                return false;
-            }
-
-            readCustomData.setAccessible(true);
-            readCustomData.invoke(player, readView);
+            ((PlayerEntityAccessor) player).qsync$invokeReadCustomData(readView);
             System.out.println("[QSync] readCustomData applied successfully");
             return true;
 
@@ -113,16 +101,6 @@ final class FabricPlayerDataCodec {
             System.out.println("[QSync] readCustomData path failed: " + e.getMessage() + " — will use fallback");
             return false;
         }
-    }
-
-    /** Walks the class hierarchy to find a declared method with the given name and parameter types. */
-    private static Method findMethod(Class<?> type, String name, Class<?>... params) {
-        for (Class<?> c = type; c != null; c = c.getSuperclass()) {
-            try {
-                return c.getDeclaredMethod(name, params);
-            } catch (NoSuchMethodException ignored) {}
-        }
-        return null;
     }
 
     // ── Fallback: explicit NBT-key restore ────────────────────────────────────
@@ -160,9 +138,9 @@ final class FabricPlayerDataCodec {
         hunger.setSaturationLevel(nbt.getFloat("foodSaturationLevel", 5.0f));
 
         // Experience / score
-        player.experienceLevel    = nbt.getInt("XpLevel", 0);
+        player.experienceLevel = nbt.getInt("XpLevel", 0);
         player.experienceProgress = nbt.getFloat("XpP", 0.0f);
-        player.totalExperience    = nbt.getInt("XpTotal", 0);
+        player.totalExperience = nbt.getInt("XpTotal", 0);
         player.setScore(nbt.getInt("Score", 0));
 
         // Hotbar selection
