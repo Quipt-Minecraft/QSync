@@ -8,6 +8,7 @@ import net.minecraft.nbt.NbtIo;
 import net.minecraft.nbt.NbtList;
 import net.minecraft.nbt.NbtOps;
 import net.minecraft.nbt.NbtSizeTracker;
+import net.minecraft.network.packet.s2c.play.GameStateChangeS2CPacket;
 import net.minecraft.registry.RegistryWrapper;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.storage.NbtReadView;
@@ -68,8 +69,21 @@ final class FabricPlayerDataCodec {
         float health = player.getHealth();
         player.setHealth(Math.max(0.1F, Math.min(health, player.getMaxHealth())));
 
+        forceClientGameModeSync(player);
         player.sendAbilitiesUpdate();
         player.currentScreenHandler.sendContentUpdates();
+    }
+
+    private static void forceClientGameModeSync(ServerPlayerEntity player) {
+        if (player.networkHandler == null || player.getGameMode() == null) {
+            return;
+        }
+
+        float modeId = player.getGameMode().getIndex();
+        player.networkHandler.sendPacket(new GameStateChangeS2CPacket(
+                GameStateChangeS2CPacket.GAME_MODE_CHANGED,
+                modeId
+        ));
     }
 
     private static boolean tryReadData(ServerPlayerEntity player, NbtCompound nbt) {
