@@ -57,6 +57,6 @@ public class PluginMessageHandler {
         // Store the raw JSON string of the data element so it can be embedded in SYNC_APPLY later
         String data = packet.get("data").toString();
         cache.store(uuid, data);
-        QSync.instance().logger().debug("Handler", "Cached sync data for {}", uuid);
+        QSync.instance().logger().log("Handler", "Cached sync data for {}", uuid);
     }
 }

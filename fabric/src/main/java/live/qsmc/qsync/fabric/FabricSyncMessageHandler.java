@@ -82,7 +82,7 @@ final class FabricSyncMessageHandler {
             response.add("data", data);
 
             // Send via vanilla packet, NOT Fabric API, so Velocity (vanilla proxy) receives it
-            transportPlayer.networkHandler.sendPacket(new CustomPayloadS2CPacket(new QSyncPayload(response.toString())));
+            ServerPlayNetworking.send(transportPlayer, new QSyncPayload(response.toString()));
             System.out.println("[QSync] Sent SYNC_DATA for " + targetUuid + " (" + response.toString().length() + " chars)");
         } catch (Exception e) {
             System.out.println("[QSync] Failed to capture data for " + targetUuid + ": " + e.getMessage());
@@ -118,13 +118,12 @@ final class FabricSyncMessageHandler {
 
     private void handleChatMessage(JsonObject packet, MinecraftServer server) {
         String username = getString(packet, "username");
-        String sourceServer = getString(packet, "sourceServer");
         String message = getString(packet, "message");
-        if (username == null || sourceServer == null || message == null || message.isBlank()) {
+        if (username == null || message == null || message.isBlank()) {
             return;
         }
 
-        server.getPlayerManager().broadcast(Text.literal("[" + sourceServer + "] " + username + ": " + message), false);
+        server.getPlayerManager().broadcast(Text.literal("<" + username + "> " + message), false);
     }
 
     private static String getString(JsonObject json, String key) {
