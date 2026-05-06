@@ -11,5 +11,9 @@ public final class PacketType {
     /** Proxy → backend: instruct the backend to apply the provided player data. */
     public static final String SYNC_APPLY = "SYNC_APPLY";
 
+    /** Proxy → backend: broadcast a player's chat message to every other backend. */
+    public static final String CHAT_MESSAGE = "CHAT_MESSAGE";
+
+
     private PacketType() {}
 }

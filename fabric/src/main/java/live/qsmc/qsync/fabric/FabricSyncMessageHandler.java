@@ -6,6 +6,7 @@ import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.network.packet.s2c.common.CustomPayloadS2CPacket;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.text.Text;
 
 import java.util.Base64;
 import java.util.UUID;
@@ -51,6 +52,7 @@ final class FabricSyncMessageHandler {
         switch (type) {
             case QSyncFabric.TYPE_SYNC_REQUEST -> handleSyncRequest(transportPlayer, targetUuid, server);
             case QSyncFabric.TYPE_SYNC_APPLY -> handleSyncApply(targetUuid, packet, server);
+            case QSyncFabric.TYPE_CHAT_MESSAGE -> handleChatMessage(packet, server);
             default -> {
                 // Ignore unknown packet types.
             }
@@ -112,6 +114,17 @@ final class FabricSyncMessageHandler {
             System.out.println("[QSync] Failed to apply sync data for " + targetUuid + ": " + e.getMessage());
             e.printStackTrace();
         }
+    }
+
+    private void handleChatMessage(JsonObject packet, MinecraftServer server) {
+        String username = getString(packet, "username");
+        String sourceServer = getString(packet, "sourceServer");
+        String message = getString(packet, "message");
+        if (username == null || sourceServer == null || message == null || message.isBlank()) {
+            return;
+        }
+
+        server.getPlayerManager().broadcast(Text.literal("[" + sourceServer + "] " + username + ": " + message), false);
     }
 
     private static String getString(JsonObject json, String key) {

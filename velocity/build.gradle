@@ -39,7 +39,6 @@ tasks {
         filteringCharset = 'UTF-8'
         duplicatesStrategy = DuplicatesStrategy.INCLUDE
 
-        from(rootProject.file('gradle.properties'))
 
         filesMatching('velocity-plugin.json') {
             expand pluginProperties

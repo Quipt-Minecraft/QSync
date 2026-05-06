@@ -8,5 +8,4 @@ pluginManagement {
 rootProject.name = "qsync"
 
 include("velocity")
-include("paper")
 include("fabric")
