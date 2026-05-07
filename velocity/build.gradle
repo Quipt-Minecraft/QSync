@@ -51,7 +51,8 @@ publishing {
     publications {
         shadow(MavenPublication) {
             artifactId = "qsync-velocity"
-            artifact shadowJar
+//            artifact shadowJar
+            from components.shadow
         }
     }
 }

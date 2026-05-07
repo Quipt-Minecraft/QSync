@@ -5,9 +5,6 @@ allprojects {
     repositories {
         mavenCentral()
     }
-    dependencies {
-
-    }
 }
 
 subprojects {
@@ -26,7 +23,6 @@ subprojects {
 
 
     publishing {
-
         repositories {
             maven {
                 url "https://repo.qsmc.live/repository/quipt"
