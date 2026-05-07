@@ -1,5 +1,5 @@
 allprojects {
-    group = "live.qsmc"
+    group = "live.qsmc.qsync"
     version = "${project_version}-${build_status}.${build_number}"
 
     repositories {

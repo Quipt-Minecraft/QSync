@@ -50,7 +50,7 @@ tasks {
 publishing {
     publications {
         shadow(MavenPublication) {
-            artifactId = "qsync-velocity"
+            artifactId = "velocity"
             from components.shadow
         }
     }
