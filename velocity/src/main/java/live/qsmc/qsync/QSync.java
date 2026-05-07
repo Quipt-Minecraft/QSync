@@ -11,7 +11,7 @@ import live.qsmc.qsync.data.PluginMessageHandler;
 import live.qsmc.qsync.listeners.ChatListener;
 import live.qsmc.qsync.listeners.JoinLeaveListener;
 import live.qsmc.qsync.listeners.SyncListener;
-import live.qsmc.velocity.QuiptProxy;
+import live.qsmc.quipt.velocity.QuiptProxy;
 
 import java.nio.file.Path;
 
