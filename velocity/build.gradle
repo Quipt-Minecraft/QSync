@@ -8,8 +8,8 @@ dependencies {
     compileOnly("com.velocitypowered:velocity-api:3.5.0-SNAPSHOT")
     compileOnly("com.google.code.gson:gson:2.11.0")
 
-    implementation("live.qsmc:core:${quipt_version}")
-    implementation("live.qsmc:velocity:${quipt_version}")
+    implementation("live.qsmc.quipt:core:${quipt_version}")
+    implementation("live.qsmc.quipt:velocity:${quipt_version}-MC${minecraft_version}")
     implementation "org.json:json:$json_version"
 }
 

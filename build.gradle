@@ -10,7 +10,7 @@ allprojects {
 subprojects {
     apply plugin: 'maven-publish'
 
-    group = "${group}"
+    group = "live.qsmc.qsync"
     version = "${project_version}-${build_status}.${build_number}-MC${minecraft_version}"
     repositories {
         mavenCentral()
