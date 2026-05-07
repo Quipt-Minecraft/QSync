@@ -19,9 +19,6 @@ subprojects {
     }
 
 
-
-
-
     publishing {
         repositories {
             maven {
@@ -41,7 +38,20 @@ tasks.register("generateMetadata") {
     subprojects.each { sub ->
         dependsOn sub.tasks.matching { t ->
             t.name == "generateMetadataFileForShadowPublication" ||
-            t.name == "generateMetadataFileForRemappedPublication"
+                    t.name == "generateMetadataFileForRemappedPublication"
+        }
+    }
+}
+
+
+
+tasks.register("generatePom") {
+    group = "publishing"
+    description = "Generates Maven pom.xml for all submodule publications."
+    subprojects.each { sub ->
+        dependsOn sub.tasks.matching { t ->
+            t.name == "generatePomFileForShadowPublication" ||
+                    t.name == "generatePomFileForRemappedPublication"
         }
     }
 }

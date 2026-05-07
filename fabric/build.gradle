@@ -40,9 +40,8 @@ tasks {
 
 publishing {
     publications {
-        mavenJava(MavenPublication) {
+        remapped(MavenPublication) {
             artifactId = "qsync-fabric"
-//            artifact remapJar
             from components.java
         }
     }
