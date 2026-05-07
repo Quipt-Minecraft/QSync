@@ -2,18 +2,23 @@ package live.qsmc.qsync.fabric;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import live.qsmc.core2.Quipt;
+import live.qsmc.qsync.fabric.listener.QSyncMessageHandleEvent;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
-import net.minecraft.network.packet.s2c.common.CustomPayloadS2CPacket;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.Text;
+import org.json.JSONObject;
 
 import java.util.Base64;
 import java.util.UUID;
 
-final class FabricSyncMessageHandler {
+final class QSyncMessageHandler {
 
     private static final String FORMAT_PLAYER_DAT_GZIP_BASE64 = "PLAYER_DAT_GZIP_BASE64";
+
+
+
 
     void onPayload(QSyncPayload payload, ServerPlayNetworking.Context context) {
         MinecraftServer server = context.server();
@@ -34,6 +39,8 @@ final class FabricSyncMessageHandler {
             System.out.println("[QSync] Failed to parse payload JSON: " + jsonStr.substring(0, Math.min(100, jsonStr.length())));
             return;
         }
+
+        Quipt.INSTANCE.events().handle(new QSyncMessageHandleEvent(new QSyncMessageHandleEvent.Data(new JSONObject(jsonStr))));
 
         String type = getString(packet, "type");
         String uuidText = getString(packet, "uuid");
@@ -68,7 +75,7 @@ final class FabricSyncMessageHandler {
 
         try {
             System.out.println("[QSync] Capturing data for " + targetUuid);
-            byte[] rawPlayerDat = FabricPlayerDataCodec.capture(target);
+            byte[] rawPlayerDat = QSyncPlayerDataCodec.capture(target);
             System.out.println("[QSync] Captured " + rawPlayerDat.length + " bytes for " + targetUuid);
             String encoded = Base64.getEncoder().encodeToString(rawPlayerDat);
 
@@ -79,6 +86,7 @@ final class FabricSyncMessageHandler {
             JsonObject data = new JsonObject();
             data.addProperty("format", FORMAT_PLAYER_DAT_GZIP_BASE64);
             data.addProperty("blob", encoded);
+            data.addProperty("extra", getExtraData(target));      
             response.add("data", data);
 
             // Send via vanilla packet, NOT Fabric API, so Velocity (vanilla proxy) receives it
@@ -88,6 +96,10 @@ final class FabricSyncMessageHandler {
             System.out.println("[QSync] Failed to capture data for " + targetUuid + ": " + e.getMessage());
             e.printStackTrace();
         }
+    }
+
+    private String getExtraData(ServerPlayerEntity target) {
+        return "";
     }
 
     private void handleSyncApply(UUID targetUuid, JsonObject packet, MinecraftServer server) {
@@ -108,7 +120,7 @@ final class FabricSyncMessageHandler {
         try {
             byte[] rawPlayerDat = Base64.getDecoder().decode(blob);
             System.out.println("[QSync] Applying " + rawPlayerDat.length + " bytes to " + targetUuid);
-            FabricPlayerDataCodec.apply(target, rawPlayerDat);
+            QSyncPlayerDataCodec.apply(target, rawPlayerDat);
             System.out.println("[QSync] Successfully applied sync data to " + targetUuid);
         } catch (Exception e) {
             System.out.println("[QSync] Failed to apply sync data for " + targetUuid + ": " + e.getMessage());

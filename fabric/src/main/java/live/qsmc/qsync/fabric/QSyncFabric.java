@@ -1,6 +1,10 @@
 package live.qsmc.qsync.fabric;
 
+import live.qsmc.core2.Quipt;
+import live.qsmc.core2.events.EventHandler;
 import live.qsmc.fabric2.QuiptMod;
+import live.qsmc.qsync.fabric.listener.QSyncMessageListener;
+import live.qsmc.qsync.fabric.listener.QSyncPayloadListener;
 import net.fabricmc.fabric.api.message.v1.ServerMessageEvents;
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
@@ -14,11 +18,16 @@ public class QSyncFabric extends QuiptMod {
     static final String TYPE_SYNC_APPLY = "SYNC_APPLY";
     static final String TYPE_CHAT_MESSAGE = "CHAT_MESSAGE";
 
-    private final FabricSyncMessageHandler syncMessageHandler = new FabricSyncMessageHandler();
+    private static QSyncFabric instance;
+
+    private final QSyncMessageHandler syncMessageHandler = new QSyncMessageHandler();
 
     @Override
     public void run(EntrypointContainer<QuiptMod> entrypoint) {
         super.run(entrypoint);
+        instance = this;
+        Quipt.INSTANCE.events().register(new QSyncMessageListener());
+        Quipt.INSTANCE.events().register(new QSyncPayloadListener());
         PayloadTypeRegistry.playC2S().register(QSyncPayload.ID, QSyncPayload.CODEC);
         PayloadTypeRegistry.playS2C().register(QSyncPayload.ID, QSyncPayload.CODEC);
         ServerPlayNetworking.registerGlobalReceiver(QSyncPayload.ID, syncMessageHandler::onPayload);
@@ -26,6 +35,11 @@ public class QSyncFabric extends QuiptMod {
 
         ServerMessageEvents.ALLOW_GAME_MESSAGE.register((server, message, overlay) -> !isBackendJoinLeaveMessage(message));
     }
+
+    public static QSyncFabric instance() {
+        return instance;
+    }
+
 
     @Override
     public void onInitialize() {

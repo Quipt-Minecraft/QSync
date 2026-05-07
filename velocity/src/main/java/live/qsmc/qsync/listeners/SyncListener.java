@@ -1,4 +1,4 @@
-package live.qsmc.qsync;
+package live.qsmc.qsync.listeners;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
@@ -8,6 +8,9 @@ import com.velocitypowered.api.event.player.ServerConnectedEvent;
 import com.velocitypowered.api.event.player.ServerPreConnectEvent;
 import com.velocitypowered.api.proxy.Player;
 import com.velocitypowered.api.proxy.ProxyServer;
+import live.qsmc.qsync.data.PacketType;
+import live.qsmc.qsync.data.PlayerDataCache;
+import live.qsmc.qsync.QSync;
 
 import java.nio.charset.StandardCharsets;
 import java.util.UUID;

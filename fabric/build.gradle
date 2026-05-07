@@ -17,6 +17,7 @@ dependencies {
     modImplementation("net.fabricmc.fabric-api:fabric-api:${fabric_version}")
     modImplementation("live.qsmc:fabric:${quipt_version}-MC${minecraft_version}")
     compileOnly("com.google.code.gson:gson:2.11.0")
+    implementation "org.json:json:$json_version"
 }
 
 tasks {

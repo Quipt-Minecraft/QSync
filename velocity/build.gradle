@@ -10,6 +10,7 @@ dependencies {
 
     implementation("live.qsmc:core:${quipt_version}")
     implementation("live.qsmc:velocity:${quipt_version}")
+    implementation "org.json:json:$json_version"
 }
 
 java {

@@ -23,9 +23,9 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 
-final class FabricPlayerDataCodec {
+final class QSyncPlayerDataCodec {
 
-    private FabricPlayerDataCodec() {}
+    private QSyncPlayerDataCodec() {}
 
     /**
      * Serializes the full player root NBT using the registry-aware WriteView.

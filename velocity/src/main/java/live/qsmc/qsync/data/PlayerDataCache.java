@@ -1,4 +1,4 @@
-package live.qsmc.qsync;
+package live.qsmc.qsync.data;
 
 import java.util.Map;
 import java.util.UUID;

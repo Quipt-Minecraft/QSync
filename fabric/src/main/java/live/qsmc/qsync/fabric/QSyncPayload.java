@@ -7,7 +7,7 @@ import net.minecraft.util.Identifier;
 
 import java.nio.charset.StandardCharsets;
 
-record QSyncPayload(String json) implements CustomPayload {
+public record QSyncPayload(String json) implements CustomPayload {
 
     static final CustomPayload.Id<QSyncPayload> ID = new CustomPayload.Id<>(Identifier.of("qsync", "data"));
 

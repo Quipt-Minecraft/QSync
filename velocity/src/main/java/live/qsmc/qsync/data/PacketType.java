@@ -1,4 +1,4 @@
-package live.qsmc.qsync;
+package live.qsmc.qsync.data;
 
 public final class PacketType {
 

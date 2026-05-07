@@ -1,10 +1,12 @@
-package live.qsmc.qsync;
+package live.qsmc.qsync.listeners;
 
 import com.google.gson.JsonObject;
 import com.velocitypowered.api.event.Subscribe;
 import com.velocitypowered.api.event.player.PlayerChatEvent;
 import com.velocitypowered.api.proxy.Player;
 import com.velocitypowered.api.proxy.ProxyServer;
+import live.qsmc.qsync.data.PacketType;
+import live.qsmc.qsync.QSync;
 
 import java.nio.charset.StandardCharsets;
 import java.util.HashSet;
@@ -51,8 +53,10 @@ public class ChatListener {
             });
         }
 
-        QSync.instance().logger().log("Chat", "Relayed chat from {} on {} to {} backend(s)",
-                player.getUsername(), originServer, forwardedServers.size());
+        if (!forwardedServers.isEmpty()) {
+            QSync.instance().logger().log("Chat", "Relayed chat from {} on {} to {} backend(s)",
+                    player.getUsername(), originServer, forwardedServers.size());
+        }
     }
 }
 

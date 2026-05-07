@@ -6,6 +6,11 @@ import com.velocitypowered.api.event.proxy.ProxyShutdownEvent;
 import com.velocitypowered.api.plugin.annotation.DataDirectory;
 import com.velocitypowered.api.proxy.ProxyServer;
 import com.velocitypowered.api.proxy.messages.MinecraftChannelIdentifier;
+import live.qsmc.qsync.data.PlayerDataCache;
+import live.qsmc.qsync.data.PluginMessageHandler;
+import live.qsmc.qsync.listeners.ChatListener;
+import live.qsmc.qsync.listeners.JoinLeaveListener;
+import live.qsmc.qsync.listeners.SyncListener;
 import live.qsmc.velocity.QuiptProxy;
 
 import java.nio.file.Path;
