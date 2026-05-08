@@ -1,6 +1,6 @@
 package live.qsmc.qsync.fabric;
 
-import live.qsmc.core2.Quipt;
+import live.qsmc.quipt.core.Quipt;
 import live.qsmc.qsync.fabric.listener.QSyncPayloadHandleEvent;
 import net.minecraft.network.packet.CustomPayload;
 import net.minecraft.server.MinecraftServer;

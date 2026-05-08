@@ -1,8 +1,7 @@
 package live.qsmc.qsync.fabric.listener;
 
 
-import live.qsmc.core2.events.Event;
-import live.qsmc.core2.events.EventListener;
+import live.qsmc.quipt.core.events.EventListener;
 import org.json.JSONObject;
 
 public class QSyncMessageListener extends EventListener<QSyncMessageHandleEvent, QSyncMessageHandleEvent.Data, JSONObject> {

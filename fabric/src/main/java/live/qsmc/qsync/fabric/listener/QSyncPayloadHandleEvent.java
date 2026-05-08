@@ -1,6 +1,6 @@
 package live.qsmc.qsync.fabric.listener;
 
-import live.qsmc.core2.events.Event;
+import live.qsmc.quipt.core.events.Event;
 import net.minecraft.network.packet.CustomPayload;
 import net.minecraft.server.network.ServerPlayNetworkHandler;
 

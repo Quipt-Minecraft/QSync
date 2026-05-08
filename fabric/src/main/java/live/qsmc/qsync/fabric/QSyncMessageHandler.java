@@ -2,7 +2,7 @@ package live.qsmc.qsync.fabric;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import live.qsmc.core2.Quipt;
+import live.qsmc.quipt.core.Quipt;
 import live.qsmc.qsync.fabric.listener.QSyncMessageHandleEvent;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.server.MinecraftServer;

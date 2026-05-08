@@ -1,10 +1,9 @@
 package live.qsmc.qsync.fabric;
 
-import live.qsmc.core2.Quipt;
-import live.qsmc.core2.events.EventHandler;
-import live.qsmc.fabric2.QuiptMod;
 import live.qsmc.qsync.fabric.listener.QSyncMessageListener;
 import live.qsmc.qsync.fabric.listener.QSyncPayloadListener;
+import live.qsmc.quipt.core.Quipt;
+import live.qsmc.quipt.fabric.QuiptMod;
 import net.fabricmc.fabric.api.message.v1.ServerMessageEvents;
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
