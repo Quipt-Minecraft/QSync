@@ -25,7 +25,7 @@ public class PluginMessageHandler {
     @Subscribe
     public void onPluginMessage(PluginMessageEvent event) {
         // Log ALL plugin messages for debugging
-        QSync.instance().logger().log("PMH", "PluginMessage received: identifier={}, source={}",
+        QSync.instance().integration().logger().log("PMH", "PluginMessage received: identifier={}, source={}",
                 event.getIdentifier().getId(), event.getSource().getClass().getSimpleName());
 
         if (!event.getIdentifier().equals(QSync.CHANNEL)) return;
@@ -41,7 +41,7 @@ public class PluginMessageHandler {
             JsonParser parser = new JsonParser();
             packet = parser.parse(raw).getAsJsonObject();
         } catch (Exception e) {
-            QSync.instance().logger().warn("PMH", "Received malformed QSync packet: {}", raw);
+            QSync.instance().integration().logger().warn("PMH", "Received malformed QSync packet: {}", raw);
             return;
         }
 
@@ -51,13 +51,13 @@ public class PluginMessageHandler {
         try {
             uuid = UUID.fromString(packet.get("uuid").getAsString());
         } catch (IllegalArgumentException e) {
-            QSync.instance().logger().warn("PMH", "QSync SYNC_DATA packet contained invalid UUID");
+            QSync.instance().integration().logger().warn("PMH", "QSync SYNC_DATA packet contained invalid UUID");
             return;
         }
 
         // Store the raw JSON string of the data element so it can be embedded in SYNC_APPLY later
         String data = packet.get("data").toString();
         cache.store(uuid, data);
-        QSync.instance().logger().log("PMH", "Cached sync data for {}", uuid);
+        QSync.instance().integration().logger().log("PMH", "Cached sync data for {}", uuid);
     }
 }

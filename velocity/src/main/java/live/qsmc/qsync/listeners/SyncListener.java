@@ -51,9 +51,9 @@ public class SyncListener {
             packet.addProperty("type", PacketType.SYNC_REQUEST);
             packet.addProperty("uuid", player.getUniqueId().toString());
             conn.sendPluginMessage(QSync.CHANNEL, packet.toString().getBytes(StandardCharsets.UTF_8));
-            QSync.instance().logger().log("Sync", "Sent SYNC_REQUEST for {} to {}", player.getUsername(), conn.getServerInfo().getName());
+            QSync.instance().integration().logger().log("Sync", "Sent SYNC_REQUEST for {} to {}", player.getUsername(), conn.getServerInfo().getName());
         }, () -> {
-            QSync.instance().logger().log("Sync", "No current server for {} — skipping SYNC_REQUEST (initial join)", player.getUsername());
+            QSync.instance().integration().logger().log("Sync", "No current server for {} — skipping SYNC_REQUEST (initial join)", player.getUsername());
         });
     }
 
@@ -73,11 +73,11 @@ public class SyncListener {
                 .buildTask(plugin, () -> {
                     String data = cache.consume(uuid);
                     if (data == null) {
-                        QSync.instance().logger().log("Sync", "No sync data available for {} after server switch", player.getUsername());
+                        QSync.instance().integration().logger().log("Sync", "No sync data available for {} after server switch", player.getUsername());
                         return;
                     }
 
-                    QSync.instance().logger().log("Sync", "Found cached data for {} ({} chars), forwarding SYNC_APPLY", player.getUsername(), data.length());
+                    QSync.instance().integration().logger().log("Sync", "Found cached data for {} ({} chars), forwarding SYNC_APPLY", player.getUsername(), data.length());
 
                     player.getCurrentServer().ifPresentOrElse(conn -> {
                         JsonObject packet = new JsonObject();
@@ -87,9 +87,9 @@ public class SyncListener {
                         JsonParser parser = new JsonParser();
                         packet.add("data", parser.parse(data));
                         conn.sendPluginMessage(QSync.CHANNEL, packet.toString().getBytes(StandardCharsets.UTF_8));
-                        QSync.instance().logger().log("Sync", "Sent SYNC_APPLY for {} to {}", player.getUsername(), conn.getServerInfo().getName());
+                        QSync.instance().integration().logger().log("Sync", "Sent SYNC_APPLY for {} to {}", player.getUsername(), conn.getServerInfo().getName());
                     }, () -> {
-                        QSync.instance().logger().log("Sync", "Player {} has no current server for SYNC_APPLY", player.getUsername());
+                        QSync.instance().integration().logger().log("Sync", "Player {} has no current server for SYNC_APPLY", player.getUsername());
                     });
                 })
                 .delay(APPLY_DELAY_MS, TimeUnit.MILLISECONDS)

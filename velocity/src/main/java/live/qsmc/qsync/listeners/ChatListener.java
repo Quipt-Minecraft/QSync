@@ -54,7 +54,7 @@ public class ChatListener {
         }
 
         if (!forwardedServers.isEmpty()) {
-            QSync.instance().logger().log("Chat", "Relayed chat from {} on {} to {} backend(s)",
+            QSync.instance().integration().logger().log("Chat", "Relayed chat from {} on {} to {} backend(s)",
                     player.getUsername(), originServer, forwardedServers.size());
         }
     }

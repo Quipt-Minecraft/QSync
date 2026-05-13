@@ -36,7 +36,7 @@ public class JoinLeaveListener {
                 onlinePlayer.sendMessage(message);
             }
 
-            QSync.instance().logger().log("JoinLeave", "{} joined the network on {}", player.getUsername(), serverName);
+            QSync.instance().integration().logger().log("JoinLeave", "{} joined the network on {}", player.getUsername(), serverName);
         }
     }
 
@@ -53,7 +53,7 @@ public class JoinLeaveListener {
             onlinePlayer.sendMessage(message);
         }
 
-        QSync.instance().logger().log("JoinLeave", "{} left the network", player.getUsername());
+        QSync.instance().integration().logger().log("JoinLeave", "{} left the network", player.getUsername());
     }
 }
 

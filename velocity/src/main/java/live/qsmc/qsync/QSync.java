@@ -42,7 +42,7 @@ public class QSync extends QuiptProxy {
         proxy().getEventManager().register(this, new PluginMessageHandler(cache));
         proxy().getEventManager().register(this, new ChatListener(proxy()));
         proxy().getEventManager().register(this, new JoinLeaveListener(proxy()));
-        logger().log("Init", "QSync enabled — player data sync, chat broadcast, and join/leave announcements active on channel '{}'", CHANNEL.getId());
+        integration().logger().log("Init", "QSync enabled — player data sync, chat broadcast, and join/leave announcements active on channel '{}'", CHANNEL.getId());
     }
 
     @Subscribe
