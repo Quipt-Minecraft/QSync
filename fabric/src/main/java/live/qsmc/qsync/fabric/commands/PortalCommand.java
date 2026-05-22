@@ -89,7 +89,7 @@ public class PortalCommand extends FabricCommandExecutor {
 
         PortalConfig.Zone zone = buildZone(ctx, name, target);
         config.zones.put(zone);
-        mod().integration().configs().save(config);
+        config.save();
 
         return logSuccess(ctx, "Created portal '" + name + "' → " + target
             + " in " + zone.world + " [(" + zone.min_x + "," + zone.min_y + "," + zone.min_z
@@ -124,7 +124,7 @@ public class PortalCommand extends FabricCommandExecutor {
         }
 
         config.zones.remove(name);
-        mod().integration().configs().save(config);
+        config.save();
 
         return logSuccess(ctx, "Deleted portal '" + name + "'.");
     }
@@ -157,7 +157,7 @@ public class PortalCommand extends FabricCommandExecutor {
 
         PortalConfig config = portalConfig();
         config.arrival_cooldown_ms = ms;
-        mod().integration().configs().save(config);
+        config.save();
 
         return logSuccess(ctx, "Portal arrival cooldown set to " + ms + "ms (" + (ms / 1000.0) + "s).");
     }

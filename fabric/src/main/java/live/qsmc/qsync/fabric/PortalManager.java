@@ -4,6 +4,7 @@ import com.google.gson.JsonObject;
 import live.qsmc.qsync.fabric.config.PortalConfig;
 import live.qsmc.quipt.core.config.ConfigManager;
 import live.qsmc.quipt.core.config.factories.GenericFactory;
+import live.qsmc.quipt.fabric.net.PluginMessagePacket;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.network.ServerPlayerEntity;
