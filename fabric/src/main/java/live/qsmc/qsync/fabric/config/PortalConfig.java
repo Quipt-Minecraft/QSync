@@ -19,6 +19,9 @@ public class PortalConfig extends Config {
     @ConfigValue
     public long arrival_cooldown_ms = 5000L;
 
+
+
+
     public PortalConfig(File file, String name, ConfigTemplate.Extension extension, QuiptIntegration integration) {
         super(file, name, extension, integration);
         zones = new ConfigMap<>(integration);
@@ -37,6 +40,14 @@ public class PortalConfig extends Config {
         public int max_y;
         public int max_z;
         public String target_server;
+
+        public Zone(){
+            super(QSyncFabric.instance().integration());
+        }
+
+        public Zone(QuiptIntegration integration){
+            super(integration);
+        }
 
         public Zone(String world, int min_x, int min_y, int min_z, int max_x, int max_y, int max_z, String target_server){
             super(QSyncFabric.instance().integration());
