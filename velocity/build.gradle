@@ -8,8 +8,10 @@ dependencies {
     compileOnly("com.velocitypowered:velocity-api:3.5.0-SNAPSHOT")
     compileOnly("com.google.code.gson:gson:2.11.0")
 
-    implementation("live.qsmc.quipt:core:${quipt_version}")
-    implementation("live.qsmc.quipt:velocity:${quipt_version}-MC${minecraft_version}")
+    // Quipt is provided by the Quipt integration/plugin at runtime. Mark as compileOnly
+    // so we don't bundle a second copy into this plugin (which causes classloader/type mismatches).
+    compileOnly("live.qsmc.quipt:core:${quipt_version}")
+    compileOnly("live.qsmc.quipt:velocity:${quipt_version}-MC${minecraft_version}")
     implementation "org.json:json:$json_version"
 }
 

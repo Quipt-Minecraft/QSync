@@ -40,7 +40,7 @@ final class QSyncMessageHandler {
             return;
         }
 
-        Quipt.INSTANCE.events().handle(new QSyncMessageHandleEvent(new QSyncMessageHandleEvent.Data(new JSONObject(jsonStr))));
+        Quipt.INSTANCE.events().handle(new QSyncMessageHandleEvent(new QSyncMessageHandleEvent.Data(server, transportPlayer, new JSONObject(jsonStr))));
 
         String type = getString(packet, "type");
         String uuidText = getString(packet, "uuid");

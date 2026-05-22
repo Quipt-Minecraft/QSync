@@ -14,6 +14,9 @@ public final class PacketType {
     /** Proxy → backend: broadcast a player's chat message to every other backend. */
     public static final String CHAT_MESSAGE = "CHAT_MESSAGE";
 
+    /** Backend → proxy: player entered a portal zone; proxy should switch them to the named server. */
+    public static final String PORTAL_REQUEST = "PORTAL_REQUEST";
+
 
     private PacketType() {}
 }

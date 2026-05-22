@@ -10,6 +10,7 @@ import com.velocitypowered.api.proxy.Player;
 import com.velocitypowered.api.proxy.ProxyServer;
 import live.qsmc.qsync.data.PacketType;
 import live.qsmc.qsync.data.PlayerDataCache;
+import live.qsmc.qsync.data.ServerConfig;
 import live.qsmc.qsync.QSync;
 
 import java.nio.charset.StandardCharsets;
@@ -19,8 +20,8 @@ import java.util.concurrent.TimeUnit;
 /**
  * Listens for server-switch events and drives the sync handoff:
  * <ol>
- *   <li>{@link ServerPreConnectEvent} — request player data from the current (old) server</li>
- *   <li>{@link ServerConnectedEvent}  — after a short delay, forward cached data to the new server</li>
+ *   <li>{@link ServerPreConnectEvent} — request player data from the current (old) server if both are synced</li>
+ *   <li>{@link ServerConnectedEvent}  — after a short delay, forward cached data to the new server if it's synced</li>
  *   <li>{@link DisconnectEvent}       — clean up any stale cache entry on full disconnect</li>
  * </ol>
  */
@@ -32,21 +33,40 @@ public class SyncListener {
     private final QSync plugin;
     private final ProxyServer server;
     private final PlayerDataCache cache;
+    private final ServerConfig serverConfig;
 
-    public SyncListener(QSync plugin, ProxyServer server, PlayerDataCache cache) {
+    public SyncListener(QSync plugin, ProxyServer server, PlayerDataCache cache, ServerConfig serverConfig) {
         this.plugin = plugin;
         this.server = server;
         this.cache = cache;
+        this.serverConfig = serverConfig;
     }
 
     /**
      * When a player is about to switch servers, ask the current backend to serialize
      * and send back the player's data before they disconnect from it.
+     * Only syncs if BOTH the current and target servers are marked as synced.
      */
     @Subscribe
     public void onServerPreConnect(ServerPreConnectEvent event) {
         Player player = event.getPlayer();
+        String targetServer = event.getResult().getServer().map(s -> s.getServerInfo().getName()).orElse(null);
+
+        // Only proceed if target server is synced
+        if (targetServer == null || !serverConfig.isSynced(targetServer)) {
+            QSync.instance().integration().logger().log("Sync", "Skipping SYNC_REQUEST for {} — target server {} is not synced", player.getUsername(), targetServer);
+            return;
+        }
+
         player.getCurrentServer().ifPresentOrElse(conn -> {
+            String currentServer = conn.getServerInfo().getName();
+
+            // Only capture data if current server is also synced
+            if (!serverConfig.isSynced(currentServer)) {
+                QSync.instance().integration().logger().log("Sync", "Skipping SYNC_REQUEST for {} — current server {} is not synced", player.getUsername(), currentServer);
+                return;
+            }
+
             JsonObject packet = new JsonObject();
             packet.addProperty("type", PacketType.SYNC_REQUEST);
             packet.addProperty("uuid", player.getUniqueId().toString());
@@ -60,6 +80,7 @@ public class SyncListener {
     /**
      * After the player has fully connected to the new server, wait briefly for the
      * old backend's SYNC_DATA response to arrive, then forward it as SYNC_APPLY.
+     * Only applies data if the new server is marked as synced.
      */
     @Subscribe
     public void onServerConnected(ServerConnectedEvent event) {
@@ -68,6 +89,14 @@ public class SyncListener {
 
         Player player = event.getPlayer();
         UUID uuid = player.getUniqueId();
+        String newServer = event.getServer().getServerInfo().getName();
+        
+        // Only apply sync data if the new server is synced
+        if (!serverConfig.isSynced(newServer)) {
+            QSync.instance().integration().logger().log("Sync", "Skipping SYNC_APPLY for {} — target server {} is not synced (invalidating cache)", player.getUsername(), newServer);
+            cache.invalidate(uuid);  // Don't keep stale data
+            return;
+        }
 
         server.getScheduler()
                 .buildTask(plugin, () -> {

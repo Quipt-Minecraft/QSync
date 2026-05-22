@@ -1,7 +1,6 @@
 package live.qsmc.qsync.fabric;
 
 import live.qsmc.quipt.core.Quipt;
-import live.qsmc.qsync.fabric.listener.QSyncPayloadHandleEvent;
 import net.minecraft.network.packet.CustomPayload;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.network.ServerPlayNetworkHandler;
@@ -32,7 +31,6 @@ public final class QSyncPayloadHandler {
             return false;
         }
 
-        Quipt.INSTANCE.events().handle(new QSyncPayloadHandleEvent(new QSyncPayloadHandleEvent.Data(payload, networkHandler)));
 
         System.out.println("[QSync] Mixin intercepted payload on qsync:data, type=" + payload.getClass().getSimpleName());
 
