@@ -11,6 +11,7 @@ import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.util.math.BlockPos;
 
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -23,6 +24,10 @@ import java.util.concurrent.ConcurrentHashMap;
  * saved position on this server happens to be inside a portal zone, they won't be immediately
  * sent back again — the cooldown expires before detection resumes.
  *
+ * <p>If a player joins while their position is already inside a portal zone, no timed cooldown
+ * is started. Instead, portal detection is suppressed until they physically leave the zone,
+ * preventing AFK players from being cycled through servers repeatedly.
+ *
  * <p>The cooldown is also re-armed the instant a portal trigger fires, preventing repeated
  * {@code PORTAL_REQUEST} packets while the server switch is in flight.
  */
@@ -30,6 +35,12 @@ final class PortalManager {
 
     /** System-time (ms) at which each player joined this server, used for the arrival cooldown. */
     private final Map<UUID, Long> recentArrivals = new ConcurrentHashMap<>();
+
+    /**
+     * Players who joined while already standing inside a portal zone.
+     * Portal detection is suppressed for these players until they leave the zone.
+     */
+    private final Set<UUID> joinedInPortal = ConcurrentHashMap.newKeySet();
 
     private final QSyncFabric mod;
 
@@ -46,9 +57,23 @@ final class PortalManager {
 
     /**
      * Call from {@code ServerPlayConnectionEvents.JOIN}.
-     * Starts the arrival cooldown so the portal doesn't trigger immediately on join.
+     * If the player's spawn position is inside a portal zone, suppresses portal detection until
+     * they leave the zone (preventing AFK cycling). Otherwise starts the normal arrival cooldown.
      */
     void onPlayerJoin(ServerPlayerEntity player) {
+        String worldId = player.getEntityWorld().getRegistryKey().getValue().toString();
+        int x = player.getBlockPos().getX();
+        int y = player.getBlockPos().getY();
+        int z = player.getBlockPos().getZ();
+
+        for (PortalConfig.Zone zone : config().zones.values()) {
+            if (zone.contains(worldId, x, y, z)) {
+                joinedInPortal.add(player.getUuid());
+                mod.integration().logger().log("Portals", "{} joined inside portal zone '{}' -- suppressing portal until they leave", player.getName().getString(), zone.id);
+                return;
+            }
+        }
+
         recentArrivals.put(player.getUuid(), System.currentTimeMillis());
         mod.integration().logger().log("Portals", "{} joined -- portal cooldown active for {}s", player.getName().getString(), config().arrival_cooldown_ms / 1000.0);
     }
@@ -59,6 +84,7 @@ final class PortalManager {
      */
     void onPlayerLeave(UUID uuid) {
         recentArrivals.remove(uuid);
+        joinedInPortal.remove(uuid);
     }
 
     /**
@@ -74,6 +100,21 @@ final class PortalManager {
     private void checkPlayer(ServerPlayerEntity player) {
         UUID uuid = player.getUuid();
 
+        String worldId = player.getEntityWorld().getRegistryKey().getValue().toString();
+        BlockPos pos = player.getBlockPos();
+
+        // If the player joined while already in a portal zone, suppress until they leave
+        if (joinedInPortal.contains(uuid)) {
+            for (PortalConfig.Zone zone : config().zones.values()) {
+                if (zone.contains(worldId, pos.getX(), pos.getY(), pos.getZ())) {
+                    return; // still inside a portal zone — keep suppressing
+                }
+            }
+            // Player has left all portal zones — clear the flag and resume normal detection
+            joinedInPortal.remove(uuid);
+            return;
+        }
+
         // Expire cooldown check
         Long arrivalTime = recentArrivals.get(uuid);
         if (arrivalTime != null) {
@@ -82,9 +123,6 @@ final class PortalManager {
             }
             recentArrivals.remove(uuid);
         }
-
-        String worldId = player.getEntityWorld().getRegistryKey().getValue().toString();
-        BlockPos pos = player.getBlockPos();
 
         for (PortalConfig.Zone zone : config().zones.values()) {
             if (zone.contains(worldId, pos.getX(), pos.getY(), pos.getZ())) {
