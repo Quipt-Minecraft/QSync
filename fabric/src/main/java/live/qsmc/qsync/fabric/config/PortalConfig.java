@@ -4,6 +4,7 @@ import live.qsmc.qsync.fabric.QSyncFabric;
 import live.qsmc.quipt.core.QuiptIntegration;
 import live.qsmc.quipt.core.config.Config;
 import live.qsmc.quipt.core.config.ConfigTemplate;
+import live.qsmc.quipt.core.config.ConfigValue;
 import live.qsmc.quipt.core.config.objects.ConfigMap;
 import live.qsmc.quipt.core.config.objects.ConfigObject;
 
@@ -12,8 +13,10 @@ import java.io.File;
 @ConfigTemplate(name = "portals", ext = ConfigTemplate.Extension.JSON)
 public class PortalConfig extends Config {
 
+    @ConfigValue
     public ConfigMap<Zone> zones;
 
+    @ConfigValue
     public long arrival_cooldown_ms = 5000L;
 
     public PortalConfig(File file, String name, ConfigTemplate.Extension extension, QuiptIntegration integration) {
