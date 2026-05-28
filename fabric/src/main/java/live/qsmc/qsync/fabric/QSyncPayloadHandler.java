@@ -1,6 +1,5 @@
 package live.qsmc.qsync.fabric;
 
-import live.qsmc.quipt.core.Quipt;
 import net.minecraft.network.packet.CustomPayload;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.network.ServerPlayNetworkHandler;

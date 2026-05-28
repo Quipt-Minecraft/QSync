@@ -27,6 +27,15 @@ final class QSyncPlayerDataCodec {
 
     private QSyncPlayerDataCodec() {}
 
+    // NBT keys that are server-specific and must never be synced or overwritten.
+    private static final String[] SKIPPED_KEYS = { "BalmData" };
+
+    private static void stripSkippedKeys(NbtCompound nbt) {
+        for (String key : SKIPPED_KEYS) {
+            nbt.remove(key);
+        }
+    }
+
     /**
      * Serializes the full player root NBT using the registry-aware WriteView.
      */
@@ -38,6 +47,7 @@ final class QSyncPlayerDataCodec {
         player.writeData(writeView);
 
         NbtCompound nbt = writeView.getNbt();
+        stripSkippedKeys(nbt);
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         NbtIo.writeCompressed(nbt, baos);
         return baos.toByteArray();
@@ -50,6 +60,7 @@ final class QSyncPlayerDataCodec {
     static void apply(ServerPlayerEntity player, byte[] payload) throws Exception {
         NbtCompound nbt = NbtIo.readCompressed(
                 new ByteArrayInputStream(payload), NbtSizeTracker.ofUnlimitedBytes());
+        stripSkippedKeys(nbt);
 
         double x = player.getX();
         double y = player.getY();
