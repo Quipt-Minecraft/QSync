@@ -20,10 +20,12 @@ public class PluginMessageHandler {
 
     private final PlayerDataCache cache;
     private final ProxyServer proxy;
+    private final DisconnectDataStore disconnectDataStore;
 
-    public PluginMessageHandler(PlayerDataCache cache, ProxyServer proxy) {
+    public PluginMessageHandler(PlayerDataCache cache, ProxyServer proxy, DisconnectDataStore disconnectDataStore) {
         this.cache = cache;
         this.proxy = proxy;
+        this.disconnectDataStore = disconnectDataStore;
     }
 
     @Subscribe
@@ -67,6 +69,13 @@ public class PluginMessageHandler {
         String data = packet.get("data").toString();
         cache.store(uuid, data);
         QSync.instance().integration().logger().log("PMH", "Cached sync data for {}", uuid);
+
+        // Player already disconnected from the proxy — persist to disk so the data
+        // survives beyond the 30-second in-memory TTL and can be applied on reconnect.
+        if (proxy.getPlayer(uuid).isEmpty()) {
+            disconnectDataStore.store(uuid, data);
+            QSync.instance().integration().logger().log("PMH", "Persisted disconnect data to disk for offline player {}", uuid);
+        }
     }
 
     private void handlePortalRequest(JsonObject packet) {

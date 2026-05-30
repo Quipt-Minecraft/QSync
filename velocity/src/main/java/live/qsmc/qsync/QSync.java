@@ -6,6 +6,7 @@ import com.velocitypowered.api.event.proxy.ProxyShutdownEvent;
 import com.velocitypowered.api.plugin.annotation.DataDirectory;
 import com.velocitypowered.api.proxy.ProxyServer;
 import com.velocitypowered.api.proxy.messages.MinecraftChannelIdentifier;
+import live.qsmc.qsync.data.DisconnectDataStore;
 import live.qsmc.qsync.data.PlayerDataCache;
 import live.qsmc.qsync.data.PluginMessageHandler;
 import live.qsmc.qsync.data.ServerConfig;
@@ -25,10 +26,13 @@ public class QSync extends QuiptProxy {
 
     private final PlayerDataCache cache = new PlayerDataCache();
     private final ServerConfig serverConfig = new ServerConfig();
+    private DisconnectDataStore disconnectDataStore;
+    private final Path dataDirectory;
 
     @Inject
     public QSync(ProxyServer server, @DataDirectory Path dataDirectory) {
-        super(server, dataDirectory); 
+        super(server, dataDirectory);
+        this.dataDirectory = dataDirectory;
         instance = this;
     }
 
@@ -44,12 +48,15 @@ public class QSync extends QuiptProxy {
     public void enable() {
         System.out.println("[QSync] Initializing...");
 
+        disconnectDataStore = new DisconnectDataStore(dataDirectory);
+        disconnectDataStore.cleanup();
+
         // Initialize default synced servers (customize as needed)
         serverConfig.initializeDefaults("lobby", "bac");
 
         proxy().getChannelRegistrar().register(CHANNEL);
-        proxy().getEventManager().register(this, new SyncListener(this, proxy(), cache, serverConfig));
-        proxy().getEventManager().register(this, new PluginMessageHandler(cache, proxy()));
+        proxy().getEventManager().register(this, new SyncListener(this, proxy(), cache, serverConfig, disconnectDataStore));
+        proxy().getEventManager().register(this, new PluginMessageHandler(cache, proxy(), disconnectDataStore));
         proxy().getEventManager().register(this, new ChatListener(proxy()));
         proxy().getEventManager().register(this, new JoinLeaveListener(proxy()));
         integration().logger().log("Init", "QSync enabled - player data sync, chat broadcast, and join/leave announcements active on channel '{}'", CHANNEL.getId());
