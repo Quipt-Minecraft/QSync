@@ -70,11 +70,15 @@ public class PluginMessageHandler {
         cache.store(uuid, data);
         QSync.instance().integration().logger().log("PMH", "Cached sync data for {}", uuid);
 
-        // Player already disconnected from the proxy — persist to disk so the data
-        // survives beyond the 30-second in-memory TTL and can be applied on reconnect.
-        if (proxy.getPlayer(uuid).isEmpty()) {
+        // ALWAYS persist to disk if the player is not currently connected to a server,
+        // or if they are entirely offline from the proxy. This ensures that even
+        // if they rejoin quickly, the data is safe on disk as a backup.
+        boolean isOffline = proxy.getPlayer(uuid).isEmpty();
+        boolean hasNoServer = !isOffline && proxy.getPlayer(uuid).get().getCurrentServer().isEmpty();
+
+        if (isOffline || hasNoServer) {
             disconnectDataStore.store(uuid, data);
-            QSync.instance().integration().logger().log("PMH", "Persisted disconnect data to disk for offline player {}", uuid);
+            QSync.instance().integration().logger().log("PMH", "Persisted disconnect data to disk for {} (offline={}, noServer={})", uuid, isOffline, hasNoServer);
         }
     }
 

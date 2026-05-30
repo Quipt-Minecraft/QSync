@@ -104,13 +104,21 @@ public class SyncListener {
         }
 
         if (isInitialJoin) {
-            // Apply data that was persisted when the player disconnected mid-session on a synced server.
-            String data = disconnectDataStore.consume(uuid);
+            // Check memory cache first, then disk.
+            String data = cache.consume(uuid);
+            if (data != null) {
+                QSync.instance().integration().logger().log("Sync", "Found cached memory data for {} on initial join, applying to {}", player.getUsername(), newServer);
+            } else {
+                data = disconnectDataStore.consume(uuid);
+                if (data != null) {
+                    QSync.instance().integration().logger().log("Sync", "Found persisted disconnect data for {} on disk, applying on initial join to {}", player.getUsername(), newServer);
+                }
+            }
+
             if (data == null) {
-                QSync.instance().integration().logger().log("Sync", "No disconnect data found for {} on initial join", player.getUsername());
+                QSync.instance().integration().logger().log("Sync", "No sync data found (memory or disk) for {} on initial join", player.getUsername());
                 return;
             }
-            QSync.instance().integration().logger().log("Sync", "Found persisted disconnect data for {}, applying on initial join to {}", player.getUsername(), newServer);
             scheduleApply(player, uuid, data);
             return;
         }
@@ -140,14 +148,20 @@ public class SyncListener {
     public void onDisconnect(DisconnectEvent event) {
         Player player = event.getPlayer();
         UUID uuid = player.getUniqueId();
-        cache.invalidate(uuid);
 
         // DisconnectEvent fires before Velocity tears down the backend connection,
         // so sendPluginMessage can still reach the backend and the player entity is
         // still available there to service the request.
         player.getCurrentServer().ifPresent(conn -> {
             String serverName = conn.getServerInfo().getName();
-            if (!serverConfig.isSynced(serverName)) return;
+            if (!serverConfig.isSynced(serverName)) {
+                cache.invalidate(uuid); // Safe to invalidate if server is not synced
+                return;
+            }
+
+            // We don't invalidate the cache here because we expect a SYNC_DATA response
+            // to arrive shortly (possibly after the player is fully offline).
+            // PluginMessageHandler will handle persisting it to disk.
 
             JsonObject packet = new JsonObject();
             packet.addProperty("type", PacketType.SYNC_REQUEST);
