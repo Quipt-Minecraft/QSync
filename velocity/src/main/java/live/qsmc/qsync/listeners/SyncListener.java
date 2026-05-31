@@ -8,7 +8,6 @@ import com.velocitypowered.api.event.player.ServerConnectedEvent;
 import com.velocitypowered.api.event.player.ServerPreConnectEvent;
 import com.velocitypowered.api.proxy.Player;
 import com.velocitypowered.api.proxy.ProxyServer;
-import live.qsmc.qsync.data.DisconnectDataStore;
 import live.qsmc.qsync.data.PacketType;
 import live.qsmc.qsync.data.PlayerDataCache;
 import live.qsmc.qsync.data.ServerConfig;
@@ -23,7 +22,7 @@ import java.util.concurrent.TimeUnit;
  * <ol>
  *   <li>{@link ServerPreConnectEvent} — request player data from the current (old) server if both are synced</li>
  *   <li>{@link ServerConnectedEvent}  — after a short delay, forward cached data to the new server if it's synced</li>
- *   <li>{@link DisconnectEvent}       — clean up any stale cache entry on full disconnect</li>
+ *   <li>{@link DisconnectEvent}       — clean up any cache entry on full disconnect</li>
  * </ol>
  */
 public class SyncListener {
@@ -35,14 +34,12 @@ public class SyncListener {
     private final ProxyServer server;
     private final PlayerDataCache cache;
     private final ServerConfig serverConfig;
-    private final DisconnectDataStore disconnectDataStore;
 
-    public SyncListener(QSync plugin, ProxyServer server, PlayerDataCache cache, ServerConfig serverConfig, DisconnectDataStore disconnectDataStore) {
+    public SyncListener(QSync plugin, ProxyServer server, PlayerDataCache cache, ServerConfig serverConfig) {
         this.plugin = plugin;
         this.server = server;
         this.cache = cache;
         this.serverConfig = serverConfig;
-        this.disconnectDataStore = disconnectDataStore;
     }
 
     /**
@@ -83,8 +80,7 @@ public class SyncListener {
     /**
      * After the player has fully connected to the new server:
      * <ul>
-     *   <li>Initial join (no previous server): check the disconnect store for data
-     *       saved when the player last left a synced server, and apply it.</li>
+     *   <li>Initial join (no previous server): skip sync apply per requirements.</li>
      *   <li>Server switch: wait briefly for the old backend's SYNC_DATA response,
      *       then forward it as SYNC_APPLY.</li>
      * </ul>
@@ -104,22 +100,7 @@ public class SyncListener {
         }
 
         if (isInitialJoin) {
-            // Check memory cache first, then disk.
-            String data = cache.consume(uuid);
-            if (data != null) {
-                QSync.instance().integration().logger().log("Sync", "Found cached memory data for {} on initial join, applying to {}", player.getUsername(), newServer);
-            } else {
-                data = disconnectDataStore.consume(uuid);
-                if (data != null) {
-                    QSync.instance().integration().logger().log("Sync", "Found persisted disconnect data for {} on disk, applying on initial join to {}", player.getUsername(), newServer);
-                }
-            }
-
-            if (data == null) {
-                QSync.instance().integration().logger().log("Sync", "No sync data found (memory or disk) for {} on initial join", player.getUsername());
-                return;
-            }
-            scheduleApply(player, uuid, data);
+            QSync.instance().integration().logger().log("Sync", "Skipping SYNC_APPLY for {} — initial join (skipping playerdata sync per configuration)", player.getUsername());
             return;
         }
 
@@ -138,49 +119,15 @@ public class SyncListener {
                 .schedule();
     }
 
-    /**
-     * When a player fully disconnects, send a best-effort SYNC_REQUEST to their
-     * current backend before the connection is torn down.  If the backend responds,
-     * {@link live.qsmc.qsync.data.PluginMessageHandler} will persist the data to
-     * disk so it survives beyond the in-memory cache TTL.
-     */
     @Subscribe
     public void onDisconnect(DisconnectEvent event) {
-        Player player = event.getPlayer();
-        UUID uuid = player.getUniqueId();
-
-        // DisconnectEvent fires before Velocity tears down the backend connection,
-        // so sendPluginMessage can still reach the backend and the player entity is
-        // still available there to service the request.
-        player.getCurrentServer().ifPresent(conn -> {
-            String serverName = conn.getServerInfo().getName();
-            if (!serverConfig.isSynced(serverName)) {
-                cache.invalidate(uuid); // Safe to invalidate if server is not synced
-                return;
-            }
-
-            // We don't invalidate the cache here because we expect a SYNC_DATA response
-            // to arrive shortly (possibly after the player is fully offline).
-            // PluginMessageHandler will handle persisting it to disk.
-
-            JsonObject packet = new JsonObject();
-            packet.addProperty("type", PacketType.SYNC_REQUEST);
-            packet.addProperty("uuid", uuid.toString());
-            conn.sendPluginMessage(QSync.CHANNEL, packet.toString().getBytes(StandardCharsets.UTF_8));
-            QSync.instance().integration().logger().log("Sync", "Sent disconnect SYNC_REQUEST for {} from {}", player.getUsername(), serverName);
-        });
+        cache.invalidate(event.getPlayer().getUniqueId());
     }
 
     // -------------------------------------------------------------------------
     // Helpers
     // -------------------------------------------------------------------------
 
-    private void scheduleApply(Player player, UUID uuid, String data) {
-        server.getScheduler()
-                .buildTask(plugin, () -> sendSyncApply(player, uuid, data))
-                .delay(APPLY_DELAY_MS, TimeUnit.MILLISECONDS)
-                .schedule();
-    }
 
     private void sendSyncApply(Player player, UUID uuid, String data) {
         player.getCurrentServer().ifPresentOrElse(conn -> {

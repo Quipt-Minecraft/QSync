@@ -20,12 +20,10 @@ public class PluginMessageHandler {
 
     private final PlayerDataCache cache;
     private final ProxyServer proxy;
-    private final DisconnectDataStore disconnectDataStore;
 
-    public PluginMessageHandler(PlayerDataCache cache, ProxyServer proxy, DisconnectDataStore disconnectDataStore) {
+    public PluginMessageHandler(PlayerDataCache cache, ProxyServer proxy) {
         this.cache = cache;
         this.proxy = proxy;
-        this.disconnectDataStore = disconnectDataStore;
     }
 
     @Subscribe
@@ -69,17 +67,6 @@ public class PluginMessageHandler {
         String data = packet.get("data").toString();
         cache.store(uuid, data);
         QSync.instance().integration().logger().log("PMH", "Cached sync data for {}", uuid);
-
-        // ALWAYS persist to disk if the player is not currently connected to a server,
-        // or if they are entirely offline from the proxy. This ensures that even
-        // if they rejoin quickly, the data is safe on disk as a backup.
-        boolean isOffline = proxy.getPlayer(uuid).isEmpty();
-        boolean hasNoServer = !isOffline && proxy.getPlayer(uuid).get().getCurrentServer().isEmpty();
-
-        if (isOffline || hasNoServer) {
-            disconnectDataStore.store(uuid, data);
-            QSync.instance().integration().logger().log("PMH", "Persisted disconnect data to disk for {} (offline={}, noServer={})", uuid, isOffline, hasNoServer);
-        }
     }
 
     private void handlePortalRequest(JsonObject packet) {

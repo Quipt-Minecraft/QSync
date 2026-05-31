@@ -6,12 +6,13 @@ import com.velocitypowered.api.event.proxy.ProxyShutdownEvent;
 import com.velocitypowered.api.plugin.annotation.DataDirectory;
 import com.velocitypowered.api.proxy.ProxyServer;
 import com.velocitypowered.api.proxy.messages.MinecraftChannelIdentifier;
-import live.qsmc.qsync.data.DisconnectDataStore;
+import live.qsmc.qsync.data.LastServerConfig;
 import live.qsmc.qsync.data.PlayerDataCache;
 import live.qsmc.qsync.data.PluginMessageHandler;
 import live.qsmc.qsync.data.ServerConfig;
 import live.qsmc.qsync.listeners.ChatListener;
 import live.qsmc.qsync.listeners.JoinLeaveListener;
+import live.qsmc.qsync.listeners.LastServerListener;
 import live.qsmc.qsync.listeners.SyncListener;
 import live.qsmc.quipt.velocity.QuiptProxy;
 
@@ -25,8 +26,6 @@ public class QSync extends QuiptProxy {
     private static QSync instance;
 
     private final PlayerDataCache cache = new PlayerDataCache();
-    private final ServerConfig serverConfig = new ServerConfig();
-    private DisconnectDataStore disconnectDataStore;
     private final Path dataDirectory;
 
     @Inject
@@ -41,26 +40,29 @@ public class QSync extends QuiptProxy {
     }
 
     public ServerConfig getServerConfig() {
-        return serverConfig;
+        return integration().configs().config(ServerConfig.class);
     }
 
     @Override
     public void enable() {
         System.out.println("[QSync] Initializing...");
 
-        disconnectDataStore = new DisconnectDataStore(dataDirectory);
-        disconnectDataStore.cleanup();
 
-        // Initialize default synced servers (customize as needed)
-        serverConfig.initializeDefaults("lobby", "bac");
+        ServerConfig config = integration().configs().register(ServerConfig.class);
+        config.save();
 
         proxy().getChannelRegistrar().register(CHANNEL);
-        proxy().getEventManager().register(this, new SyncListener(this, proxy(), cache, serverConfig, disconnectDataStore));
-        proxy().getEventManager().register(this, new PluginMessageHandler(cache, proxy(), disconnectDataStore));
+
+        LastServerConfig lastServerConfig = integration().configs().register(LastServerConfig.class);
+        lastServerConfig.save();
+
+        proxy().getEventManager().register(this, new SyncListener(this, proxy(), cache, config));
+        proxy().getEventManager().register(this, new PluginMessageHandler(cache, proxy()));
         proxy().getEventManager().register(this, new ChatListener(proxy()));
         proxy().getEventManager().register(this, new JoinLeaveListener(proxy()));
+        proxy().getEventManager().register(this, new LastServerListener(proxy(), lastServerConfig));
         integration().logger().log("Init", "QSync enabled - player data sync, chat broadcast, and join/leave announcements active on channel '{}'", CHANNEL.getId());
-        integration().logger().log("Init", "Synced servers: {}", serverConfig.getSyncedServers());
+        integration().logger().log("Init", "Synced servers: {}", config.getSyncedServers());
     }
 
     @Subscribe
